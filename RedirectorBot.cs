@@ -60,19 +60,19 @@ namespace AnonymousFzBot
 
                 if (e.Message.Photo != null)
                 {
-                    await _botClient.EditMessageMediaAsync(chatId, forwardedMessageId, new InputMediaPhoto(e.Message.Photo.OrderByDescending(v => v.Width).First().FileUniqueId));
+                    await _botClient.EditMessageMediaAsync(chatId, forwardedMessageId, new InputMediaPhoto(e.Message.Photo.OrderByDescending(v => v.Width).First().FileId));
                 }
                 else if (e.Message.Audio != null)
                 {
-                    await _botClient.EditMessageMediaAsync(chatId, forwardedMessageId, new InputMediaAudio(e.Message.Audio.FileUniqueId));
+                    await _botClient.EditMessageMediaAsync(chatId, forwardedMessageId, new InputMediaAudio(e.Message.Audio.FileId));
                 }
                 else if (e.Message.Video != null)
                 {
-                    await _botClient.EditMessageMediaAsync(chatId, forwardedMessageId, new InputMediaVideo(e.Message.Video.FileUniqueId));
+                    await _botClient.EditMessageMediaAsync(chatId, forwardedMessageId, new InputMediaVideo(e.Message.Video.FileId));
                 }
                 else if (e.Message.Document != null)
                 {
-                    await _botClient.EditMessageMediaAsync(chatId, forwardedMessageId, new InputMediaDocument(e.Message.Document.FileUniqueId));
+                    await _botClient.EditMessageMediaAsync(chatId, forwardedMessageId, new InputMediaDocument(e.Message.Document.FileId));
                 }
 
                 if (e.Message.Location != null)
@@ -144,32 +144,32 @@ namespace AnonymousFzBot
                                 msg = await _botClient.SendTextMessageAsync(chatId, e.Message.Text, disableNotification: disableNotification, replyToMessageId: replyToMessageId);
                                 break;
                             case MessageType.Photo:
-                                msg = await _botClient.SendPhotoAsync(chatId, new InputOnlineFile(e.Message.Photo.OrderByDescending(v => v.Height).First().FileUniqueId), e.Message.Caption,
+                                msg = await _botClient.SendPhotoAsync(chatId, new InputOnlineFile(e.Message.Photo.OrderByDescending(v => v.Height).First().FileId), e.Message.Caption,
                                     disableNotification: disableNotification, 
                                     replyToMessageId: replyToMessageId);
                                 break;
                             case MessageType.Audio:
-                                msg = await _botClient.SendAudioAsync(chatId, new InputOnlineFile(e.Message.Audio.FileUniqueId), e.Message.Caption, duration: e.Message.Audio.Duration,
+                                msg = await _botClient.SendAudioAsync(chatId, new InputOnlineFile(e.Message.Audio.FileId), e.Message.Caption, duration: e.Message.Audio.Duration,
                                     performer: e.Message.Audio.Performer,
 
                                     disableNotification: disableNotification, replyToMessageId: replyToMessageId);
                                 break;
                             case MessageType.Video:
-                                msg = await _botClient.SendVideoAsync(chatId, new InputOnlineFile(e.Message.Video.FileUniqueId), e.Message.Video.Duration, e.Message.Video.Width,
+                                msg = await _botClient.SendVideoAsync(chatId, new InputOnlineFile(e.Message.Video.FileId), e.Message.Video.Duration, e.Message.Video.Width,
                                     e.Message.Video.Height,
                                     disableNotification: disableNotification, replyToMessageId: replyToMessageId);
                                 break;
                             case MessageType.Voice:
-                                msg = await _botClient.SendVoiceAsync(chatId, new InputOnlineFile(e.Message.Voice.FileUniqueId), caption: e.Message.Caption, disableNotification: disableNotification,
+                                msg = await _botClient.SendVoiceAsync(chatId, new InputOnlineFile(e.Message.Voice.FileId), caption: e.Message.Caption, disableNotification: disableNotification,
                                     replyToMessageId: replyToMessageId);
                                 break;
                             case MessageType.Document:
-                                msg = await _botClient.SendDocumentAsync(chatId, new InputOnlineFile(e.Message.Document.FileUniqueId), caption: e.Message.Caption,
+                                msg = await _botClient.SendDocumentAsync(chatId, new InputOnlineFile(e.Message.Document.FileId), caption: e.Message.Caption,
                                     disableNotification: disableNotification,
                                     replyToMessageId: replyToMessageId);
                                 break;
                             case MessageType.Sticker:
-                                msg = await _botClient.SendStickerAsync(chatId, new InputOnlineFile(e.Message.Sticker.FileUniqueId), disableNotification: disableNotification,
+                                msg = await _botClient.SendStickerAsync(chatId, new InputOnlineFile(e.Message.Sticker.FileId), disableNotification: disableNotification,
                                     replyToMessageId: replyToMessageId);
                                 break;
                             case MessageType.Location:

@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Http.Json;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace AnonymousFzBot
 {
@@ -12,23 +11,23 @@ namespace AnonymousFzBot
         {
         }
         
-        public Dictionary<long, Dictionary<int, int>> ForwardedMessageIds { get; } = new Dictionary<long, Dictionary<int, int>>(); // ChatId of user -> OriginalMessageId -> ForwardedMessageId  
+        public Dictionary<long, Dictionary<int, int>> ForwardedMessageIds { get; set; } = new Dictionary<long, Dictionary<int, int>>(); // ChatId of user -> OriginalMessageId -> ForwardedMessageId  
 
-        public Dictionary<int, long> EnabledUsers { get; } = new Dictionary<int, long>(); // User -> ChatId
-        public List<int> BannedUsers { get; } = new List<int>();
+        public Dictionary<int, long> EnabledUsers { get; set; } = new Dictionary<int, long>(); // User -> ChatId
+        public List<int> BannedUsers { get; set; } = new List<int>();
 
         public static State Load()
         {
             if (File.Exists("state.json"))
             {
-                return JsonConvert.DeserializeObject<State>("state.json");
+                return JsonSerializer.Deserialize<State>(File.ReadAllText("state.json"));
             }
             return new State();
         }
 
         public void Save()
         {
-            File.WriteAllText("state.json", JsonConvert.SerializeObject(this));
+            File.WriteAllText("state.json", JsonSerializer.Serialize(this));
         }
     }
 }
