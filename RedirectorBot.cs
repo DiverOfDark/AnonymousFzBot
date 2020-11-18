@@ -95,11 +95,34 @@ namespace AnonymousFzBot
                     if (e.Message.ForwardFromChat != null && e.Message.ForwardFromChat.Id == -1001429386280)
                     {
                         _state.EnabledUsers.Add(e.Message.From.Id, e.Message.Chat.Id);
-                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "Чат прямо здесь, просто пиши!");
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "Чат прямо здесь, просто пиши! Важные нюансы: при создании опроса - видно кто его сделал, удалять сообщения нельзя, зато можно редактировать. В остальном вроде всё работает. Ну и истории нету.");
                     }
                     else
                     {
                         await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "Перешли мне любое сообщение с текстом из секретных движухи чтобы вступить в ряды анонимусов FZ!");
+                    }
+                }
+                else if (e.Message.Text == "/ban" && e.Message.From.Username == "diverofdark")
+                {
+                    if (e.Message.ReplyToMessage == null)
+                    {
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Реплайни на сообщение юзера, которого хочешь забанить");
+                    }
+                    else
+                    {
+                        var proxiedMessage = e.Message.ReplyToMessage.MessageId;
+                        var originalMessage = _state.ForwardedMessageIds[e.Message.From.Id].FirstOrDefault(v => v.Value == proxiedMessage).Key;
+                        if (originalMessage != 0)
+                        {
+                            var user = _state.UserMessages.FirstOrDefault(v => v.Value.Contains(originalMessage)).Key;
+                            if (user != 0)
+                            {
+                                _state.BannedUsers.Add(user);
+                                return;
+                            }
+                        }
+
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Не могу найти автора сообщения");
                     }
                 }
                 else
@@ -128,7 +151,14 @@ namespace AnonymousFzBot
                             {
                                 // bot haven't forwarded this message to user. I believe he is the author.
                                 disableNotification = false;
-                                replyToMessageId = 0;
+                                if (_state.ForwardedMessageIds.TryGetValue(e.Message.From.Id, out var senderForwards))
+                                {
+                                    replyToMessageId = senderForwards.FirstOrDefault(v => v.Value == replyToMessageId).Key;
+                                }
+                                else
+                                {
+                                    replyToMessageId = 0;
+                                }
                             }
                             else
                             {
@@ -177,20 +207,25 @@ namespace AnonymousFzBot
                                     replyToMessageId: replyToMessageId);
                                 break;
                             case MessageType.Poll:
-                                msg = await _botClient.ForwardMessageAsync(e.Message.Chat.Id, chatId, e.Message.MessageId, true);
+                                msg = await _botClient.ForwardMessageAsync(chatId, e.Message.Chat.Id, e.Message.MessageId, true);
                                 break;
                             case MessageType.Dice:
-                                await _botClient.DeleteMessageAsync(e.Message.Chat.Id, e.Message.MessageId);
-                                var newDice = await _botClient.SendDiceAsync(e.Message.Chat.Id, disableNotification: true, replyToMessageId: e.Message.ReplyToMessage?.MessageId ?? 0);
-                                msg = await _botClient.ForwardMessageAsync(e.Message.Chat.Id, chatId, newDice.MessageId, true);
+                                msg = await _botClient.ForwardMessageAsync(chatId, e.Message.Chat.Id, e.Message.MessageId, true);
                                 break;
+                            case MessageType.MessagePinned:
+                                var originalMessage = e.Message.PinnedMessage.MessageId;
+                                if (forwardeds.ContainsKey(originalMessage))
+                                {
+                                    originalMessage = forwardeds[originalMessage];
+                                }
+                                await _botClient.PinChatMessageAsync(chatId, originalMessage);
+                                continue;
                             case MessageType.Venue:
                             case MessageType.VideoNote:
                             case MessageType.Contact:
                             case MessageType.Game:
                             case MessageType.Invoice:
                             case MessageType.SuccessfulPayment:
-                            case MessageType.MessagePinned:
                             case MessageType.ChatMembersAdded:
                             case MessageType.ChatMemberLeft:
                             case MessageType.ChatTitleChanged:
@@ -205,17 +240,23 @@ namespace AnonymousFzBot
                             case MessageType.MigratedFromGroup:
                             default:
                                 await _botClient.SendTextMessageAsync(e.Message.Chat.Id,
-                                    "Извини, я пока не умею такие типы сообщений посылать. Напиши об этом в личку @diverofdark, он наверное починит", replyToMessageId: e.Message.MessageId);
+                                    "СоваБот: Извини, я пока не умею такие типы сообщений посылать. Напиши об этом в личку @diverofdark, он наверное починит", replyToMessageId: e.Message.MessageId);
                                 return;
                         }
 
+                        if (!_state.UserMessages.TryGetValue(e.Message.From.Id, out var userMessages))
+                        {
+                            userMessages = new List<int>();
+                            _state.UserMessages[e.Message.From.Id] = userMessages;
+                        }
+                        userMessages.Add(e.Message.MessageId);
                         forwardeds[e.Message.MessageId] = msg.MessageId;
                     }
                 }
             }
             catch (Exception ex)
             {
-                await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "Случилась непоправимая ошибка, отправь это @diverofdark плиз: \n" + ex);
+                await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Случилась непоправимая ошибка, отправь это @diverofdark плиз, никто не видит это кроме тебя: \n" + ex);
             }
         }
 
