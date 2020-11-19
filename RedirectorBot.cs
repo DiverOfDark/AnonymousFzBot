@@ -102,7 +102,7 @@ namespace AnonymousFzBot
                         await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "Перешли мне любое сообщение с текстом из секретных движухи чтобы вступить в ряды анонимусов FZ!");
                     }
                 }
-                else if (e.Message.Text == "/ban" && e.Message.From.Username == "diverofdark")
+                else if (e.Message.Text == "/ban" && (e.Message.From.Username == "diverofdark" || e.Message.From.Username == "IgorMasko"))
                 {
                     if (e.Message.ReplyToMessage == null)
                     {

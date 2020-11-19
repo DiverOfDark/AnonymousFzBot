@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AnonymousFzBot
 {
@@ -24,6 +25,7 @@ namespace AnonymousFzBot
         
         public Dictionary<long, Dictionary<int, int>> ForwardedMessageIds { get; set; } = new Dictionary<long, Dictionary<int, int>>(); // ChatId of user -> OriginalMessageId -> ForwardedMessageId  
 
+        [JsonIgnore]
         public Dictionary<int, List<int>> UserMessages { get; set; } = new Dictionary<int, List<int>>(); // user messages
         
         public Dictionary<int, long> EnabledUsers { get; set; } = new Dictionary<int, long>(); // User -> ChatId
