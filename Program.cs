@@ -10,11 +10,11 @@ namespace AnonymousFzBot
         static async Task Main(string[] args)
         {
             var botClient = new TelegramBotClient(args[0]);
-            using var state = State.Load();
+            var state = State.Load();
             using var worker = new RedirectorBot(botClient, state);
             while (true)
             {
-                Thread.Sleep(1000);
+                Thread.Sleep(3000);
                 state.Save();
             }
         }

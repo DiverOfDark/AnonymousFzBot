@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace AnonymousFzBot
 {
-    internal class State : IDisposable
+    internal class State
     {
         static State()
         {
@@ -18,10 +18,6 @@ namespace AnonymousFzBot
         }
 
         private static string StateFile = "state.json";
-        
-        public void Dispose()
-        {
-        }
         
         public Dictionary<long, Dictionary<int, int>> ForwardedMessageIds { get; set; } = new Dictionary<long, Dictionary<int, int>>(); // ChatId of user -> OriginalMessageId -> ForwardedMessageId  
 
