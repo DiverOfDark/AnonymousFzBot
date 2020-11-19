@@ -7,7 +7,7 @@ namespace AnonymousFzBot
 {
     internal class State : IDisposable
     {
-        static State
+        static State()
         {
             var stateFile = Environment.GetEnvironmentVariable("statefile");
             if (!string.IsNullOrWhiteSpace(stateFile))
