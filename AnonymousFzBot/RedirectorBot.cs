@@ -34,6 +34,7 @@ namespace AnonymousFzBot
             }
             catch (Exception ex)
             {
+                Console.Error.WriteLine(ex);
                 await _botClient.SendTextMessageAsync(912327, "Exception: " + ex);
             }
         }
