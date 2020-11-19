@@ -7,6 +7,7 @@ using Telegram.Bot.Args;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InputFiles;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace AnonymousFzBot
 {
@@ -92,6 +93,7 @@ namespace AnonymousFzBot
 
         private async void OnMessage(object sender, MessageEventArgs e)
         {
+            _state.StoreLastOnline(e.Message.From.Username);
             await SafeExecute(async () =>
             {
                 if (_state.IsBanned(e.Message.From.Id))
@@ -105,6 +107,37 @@ namespace AnonymousFzBot
                 else if (e.Message.Text == "/ban" && IsSentByAdmin(e))
                 {
                     await HandleBanCommand(e);
+                }
+                else if (e.Message.Text == "/users")
+                {
+                    var lastOnline = _state.GetLastOnline();
+                    var users = lastOnline.Take(10).ToList();
+                    if (users.Count < 5)
+                    {
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id,
+                            "Слишком мало пользователей отметилось с момента ввода этого функционала. Как только будет хотя бы 5 - начну выводить последних людей кто был онлайн (по алфавиту)");
+                    }
+                    else
+                    {
+                        var allKnownUsersCount = _state.GetUsers().Count;
+                        users.Sort(); // we don't want to lose anonymity because of ordering by last message
+                        var inlineMsg = string.Join("\n", users.Select(v => "@" + v + "\n"));
+
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, $"Всего с ботом общалось {allKnownUsersCount}, из них последние активные:\n{inlineMsg}");
+                    }
+                }
+                else if (e.Message.Text.StartsWith("/sign"))
+                {
+                    e.Message.Text = e.Message.Text.Substring("/sign".Length);
+                    await ForwardMessage(e, true);
+                }
+                else if (e.Message.Text == "/help")
+                {
+                    await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "Справка по боту:\n" +
+                                                                             "/help - выводит этот текст\n" +
+                                                                             "/ban - позволяет забанить человека (админу)\n" +
+                                                                             "/users - показывает список пользователей\n" +
+                                                                             "/sign <текст> - позволяет отправить текст с подписью");
                 }
                 else
                 {
@@ -164,7 +197,7 @@ namespace AnonymousFzBot
             }
         }
 
-        private async Task ForwardMessage(MessageEventArgs e)
+        private async Task ForwardMessage(MessageEventArgs e, bool sign = false)
         {
             var otherUsers = _state.GetUsers().Where(v => v.user != e.Message.From.Id).ToList();
 
@@ -194,10 +227,20 @@ namespace AnonymousFzBot
 
                     Message msg;
 
+                    InlineKeyboardMarkup ikb = null;
+
+                    if (sign)
+                    {
+                        ikb = new InlineKeyboardMarkup(new InlineKeyboardButton
+                        {
+                            Text = e.Message.From.Username
+                        });
+                    }
+                    
                     switch (e.Message.Type)
                     {
                         case MessageType.Text:
-                            msg = await _botClient.SendTextMessageAsync(pair.chat, e.Message.Text, disableNotification: disableNotification, replyToMessageId: replyToMessageId);
+                            msg = await _botClient.SendTextMessageAsync(pair.chat, e.Message.Text, disableNotification: disableNotification, replyToMessageId: replyToMessageId, replyMarkup: ikb);
                             break;
                         case MessageType.Photo:
                             msg = await _botClient.SendPhotoAsync(pair.chat, new InputOnlineFile(e.Message.Photo.OrderByDescending(v => v.Height).First().FileId), e.Message.Caption,
