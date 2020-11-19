@@ -5,10 +5,12 @@ ARG CiCommitName=local
 ARG CiCommitHash=sha
 
 WORKDIR /build
-ADD . .
+ADD AnonymousFzBot AnonymousFzBot
+ADD AnonymousFzBotTest AnonymousFzBotTest
+ADD AnonymousFzBot.sln .
 RUN dotnet restore
 
-RUN dotnet publish --output out/ --configuration Release --runtime linux-x64 --self-contained true
+RUN dotnet publish --output out/ --configuration Release --runtime linux-x64 --self-contained true AnonymousFzBot
 
 FROM mcr.microsoft.com/dotnet/sdk:5.0
 ENV TZ=Europe/Moscow
