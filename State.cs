@@ -7,6 +7,17 @@ namespace AnonymousFzBot
 {
     internal class State : IDisposable
     {
+        static State
+        {
+            var stateFile = Environment.GetEnvironmentVariable("statefile");
+            if (!string.IsNullOrWhiteSpace(stateFile))
+            {
+                StateFile = stateFile;
+            }
+        }
+
+        private static string StateFile = "state.json";
+        
         public void Dispose()
         {
         }
@@ -20,16 +31,16 @@ namespace AnonymousFzBot
 
         public static State Load()
         {
-            if (File.Exists("state.json"))
+            if (File.Exists(StateFile))
             {
-                return JsonSerializer.Deserialize<State>(File.ReadAllText("state.json"));
+                return JsonSerializer.Deserialize<State>(File.ReadAllText(StateFile));
             }
             return new State();
         }
 
         public void Save()
         {
-            File.WriteAllText("state.json", JsonSerializer.Serialize(this));
+            File.WriteAllText(StateFile, JsonSerializer.Serialize(this));
         }
     }
 }
