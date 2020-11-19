@@ -148,5 +148,12 @@ namespace AnonymousFzBot
             forwardeds[originalId] = newId;
 
         }
+
+        public void Disable(int userToRemove)
+        {
+            _innerState.EnabledUsers.Remove(userToRemove);
+            _innerState.ForwardedMessageIds.Remove(userToRemove);
+            _innerState.UserMessages.Remove(userToRemove);
+        }
     }
 }

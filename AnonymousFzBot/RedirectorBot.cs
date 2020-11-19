@@ -26,7 +26,7 @@ namespace AnonymousFzBot
 
         private static bool IsSentByAdmin(MessageEventArgs e) => e.Message.From.Username == "diverofdark" || e.Message.From.Username == "IgorMasko";
 
-        private async Task SafeExecute(Func<Task> action)
+        private async Task SafeExecute(Func<Task> action, Action<Exception> onError = null)
         {
             try
             {
@@ -34,6 +34,7 @@ namespace AnonymousFzBot
             }
             catch (Exception ex)
             {
+                onError?.Invoke(ex);
                 Console.Error.WriteLine(ex);
                 await _botClient.SendTextMessageAsync(912327, "Exception: " + ex);
             }
@@ -270,6 +271,12 @@ namespace AnonymousFzBot
                     }
 
                     _state.RecordMessageWasForwarded(pair.user, e.Message.MessageId, msg.MessageId);
+                }, ex =>
+                {
+                    if (ex.Message.Contains("Forbidden: bot was blocked by the user"))
+                    {
+                        _state.Disable(pair.user);
+                    }
                 });
             }
         }
