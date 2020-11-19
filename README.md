@@ -1,0 +1,1 @@
+DockerHub: https://hub.docker.com/repository/docker/diverofdark/anonymousfzbot/general
