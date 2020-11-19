@@ -34,7 +34,7 @@ namespace AnonymousFzBot
             }
             catch (Exception ex)
             {
-                await _botClient.SendTextMessageAsync(912327, "<b>Exception: <b/>" + ex, ParseMode.Html, disableNotification: false);
+                await _botClient.SendTextMessageAsync(912327, "Exception: " + ex);
             }
         }
 
