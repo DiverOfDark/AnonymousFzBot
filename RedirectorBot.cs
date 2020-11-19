@@ -118,6 +118,38 @@ namespace AnonymousFzBot
                             if (user != 0)
                             {
                                 _state.BannedUsers.Add(user);
+                                foreach (var pair in _state.EnabledUsers)
+                                {
+                                    var userId = pair.Key;
+                                    var chatId = pair.Value;
+
+                                    int replyToMessageId = originalMessage;
+
+                                    if (!_state.ForwardedMessageIds.TryGetValue(userId, out var forwardeds))
+                                    {
+                                        forwardeds = new Dictionary<int, int>();
+                                        _state.ForwardedMessageIds[userId] = forwardeds;
+                                    }
+
+                                    if (!forwardeds.TryGetValue(replyToMessageId, out var proxiedMessages))
+                                    {
+                                        // bot haven't forwarded this message to user. I believe he is the author.
+                                        if (_state.ForwardedMessageIds.TryGetValue(e.Message.From.Id, out var senderForwards))
+                                        {
+                                            replyToMessageId = senderForwards.FirstOrDefault(v => v.Value == replyToMessageId).Key;
+                                        }
+                                        else
+                                        {
+                                            replyToMessageId = 0;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        replyToMessageId = proxiedMessages;
+                                    }
+
+                                    await _botClient.SendTextMessageAsync(chatId, "СоваБот: Забанен автор сообщения", replyToMessageId: replyToMessageId);
+                                }
                                 return;
                             }
                         }
@@ -128,6 +160,13 @@ namespace AnonymousFzBot
                 else
                 {
                     var otherUsers = _state.EnabledUsers.Where(v => v.Key != e.Message.From.Id).ToList();
+
+                    if (!_state.UserMessages.TryGetValue(e.Message.From.Id, out var userMessages))
+                    {
+                        userMessages = new List<int>();
+                        _state.UserMessages[e.Message.From.Id] = userMessages;
+                    }
+                    userMessages.Add(e.Message.MessageId);
 
                     foreach (var pair in otherUsers)
                     {
@@ -243,13 +282,6 @@ namespace AnonymousFzBot
                                     "СоваБот: Извини, я пока не умею такие типы сообщений посылать. Напиши об этом в личку @diverofdark, он наверное починит", replyToMessageId: e.Message.MessageId);
                                 return;
                         }
-
-                        if (!_state.UserMessages.TryGetValue(e.Message.From.Id, out var userMessages))
-                        {
-                            userMessages = new List<int>();
-                            _state.UserMessages[e.Message.From.Id] = userMessages;
-                        }
-                        userMessages.Add(e.Message.MessageId);
                         forwardeds[e.Message.MessageId] = msg.MessageId;
                     }
                 }
