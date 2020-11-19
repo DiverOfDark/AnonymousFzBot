@@ -164,7 +164,7 @@ namespace AnonymousFzBot
             }
             catch (Exception ex)
             {
-                await _botClient.SendTextMessageAsync("diverofdark", "СоваБот: Случилась непоправимая ошибка, отправь это @diverofdark плиз, никто не видит это кроме тебя: \n" + ex);
+                await _botClient.SendTextMessageAsync(new ChatId("diverofdark"), "СоваБот: Случилась непоправимая ошибка, отправь это @diverofdark плиз, никто не видит это кроме тебя: \n" + ex);
             }
         }
 
@@ -338,7 +338,7 @@ namespace AnonymousFzBot
                         case MessageType.MigratedToSupergroup:
                         case MessageType.MigratedFromGroup:
                         default:
-                            await _botClient.SendTextMessageAsync("@diverofdark", "СоваБот: Извини, я пока не умею такие типы сообщений посылать. Напиши об этом в личку @diverofdark, он наверное починит", replyToMessageId: e.Message.MessageId);
+                            await _botClient.SendTextMessageAsync(userId, "СоваБот: Извини, я пока не умею такие типы сообщений посылать. Напиши об этом в личку @diverofdark, он наверное починит", replyToMessageId: e.Message.MessageId);
                             return;
                     }
 
