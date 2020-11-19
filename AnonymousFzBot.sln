@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnonymousFzBot", "AnonymousFzBot.csproj", "{2F5362EC-5BEA-455D-920D-1B51971CB931}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnonymousFzBot", "AnonymousFzBot\AnonymousFzBot.csproj", "{2F5362EC-5BEA-455D-920D-1B51971CB931}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnonymousFzBotTest", "AnonymousFzBotTest\AnonymousFzBotTest.csproj", "{E911DFCF-A85E-4C58-AFDB-A25ADF2D524A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,5 +14,9 @@ Global
 		{2F5362EC-5BEA-455D-920D-1B51971CB931}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2F5362EC-5BEA-455D-920D-1B51971CB931}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2F5362EC-5BEA-455D-920D-1B51971CB931}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E911DFCF-A85E-4C58-AFDB-A25ADF2D524A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E911DFCF-A85E-4C58-AFDB-A25ADF2D524A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E911DFCF-A85E-4C58-AFDB-A25ADF2D524A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E911DFCF-A85E-4C58-AFDB-A25ADF2D524A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

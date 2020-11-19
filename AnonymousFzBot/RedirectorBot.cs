@@ -34,108 +34,55 @@ namespace AnonymousFzBot
             }
             catch (Exception ex)
             {
-                await _botClient.SendTextMessageAsync("diverofdark", "<b>Exception: <b/>" + ex, ParseMode.Html, disableNotification: false);
+                await _botClient.SendTextMessageAsync(912327, "<b>Exception: <b/>" + ex, ParseMode.Html, disableNotification: false);
             }
-        }
-
-        private (int originalMessageId, bool sentByMe) GetProxiedMessageOriginalId(int receivedByUserId, int proxiedMessageId)
-        {
-            // 0 - no replyTo / noId
-            if (proxiedMessageId == 0)
-                return (0, false);
-            
-            if (!_state.UserMessages.TryGetValue(receivedByUserId, out var myMessages))
-            {
-                _state.UserMessages[receivedByUserId] = myMessages = new List<int>();
-            }
-
-            if (myMessages.Contains(proxiedMessageId))
-            {
-                return (proxiedMessageId, true); // was sent by me;
-            }
-
-            if (!_state.ForwardedMessageIds.TryGetValue(receivedByUserId, out var proxiedForMe))
-            {
-                _state.ForwardedMessageIds[receivedByUserId] = proxiedForMe = new Dictionary<int, int>();
-            }
-
-            return (proxiedForMe.FirstOrDefault(v => v.Value == proxiedMessageId).Key, false); // or 0, which means - do not proxy;
-        }
-
-        private (int proxiedId, bool sendToMe) GetProxyOfMessageForUser(int targetUser, int originalMessageId)
-        {
-            if (originalMessageId == 0)
-                return (0, false);
-            
-            if (!_state.UserMessages.TryGetValue(targetUser, out var myMessages))
-            {
-                _state.UserMessages[targetUser] = myMessages = new List<int>();
-            }
-
-            if (myMessages.Contains(originalMessageId))
-            {
-                return (originalMessageId, true); // was sent by me;
-            }
-
-            if (!_state.ForwardedMessageIds.TryGetValue(targetUser, out var proxiedForMe))
-            {
-                _state.ForwardedMessageIds[targetUser] = proxiedForMe = new Dictionary<int, int>();
-            }
-
-            if (proxiedForMe.TryGetValue(originalMessageId, out var proxiedId))
-                return (proxiedId, false);
-
-            return (0, false);
         }
 
         private async void OnMessageEdited(object sender, MessageEventArgs e)
         {
-            var otherUsers = _state.EnabledUsers.Where(v => v.Key != e.Message.From.Id).ToList();
+            var otherUsers = _state.GetUsers().Where(v => v.user != e.Message.From.Id).ToList();
 
             foreach (var pair in otherUsers)
             {
                 await SafeExecute(async () =>
                 {
-                    var userId = pair.Key;
-                    var chatId = pair.Value;
-                    
-                    var originalMessage = GetProxiedMessageOriginalId(userId, e.Message.MessageId);
+                    var originalMessage = _state.GetProxiedMessageOriginalId(pair.user, e.Message.MessageId);
                     if (originalMessage.sentByMe)
                         return;
 
-                    var proxied = GetProxyOfMessageForUser(userId, originalMessage.originalMessageId);
+                    var proxied = _state.GetProxyOfMessageForUser(pair.user, originalMessage.originalMessageId);
 
                     var forwardedMessageId = proxied.proxiedId;
 
                     if (e.Message.Text != null)
                     {
-                        await _botClient.EditMessageTextAsync(chatId, forwardedMessageId, e.Message.Text);
+                        await _botClient.EditMessageTextAsync(pair.chat, forwardedMessageId, e.Message.Text);
                     }
 
                     if (e.Message.Caption != null)
                     {
-                        await _botClient.EditMessageCaptionAsync(chatId, forwardedMessageId, e.Message.Caption);
+                        await _botClient.EditMessageCaptionAsync(pair.chat, forwardedMessageId, e.Message.Caption);
                     }
 
                     if (e.Message.Photo != null)
                     {
-                        await _botClient.EditMessageMediaAsync(chatId, forwardedMessageId, new InputMediaPhoto(e.Message.Photo.OrderByDescending(v => v.Width).First().FileId));
+                        await _botClient.EditMessageMediaAsync(pair.chat, forwardedMessageId, new InputMediaPhoto(e.Message.Photo.OrderByDescending(v => v.Width).First().FileId));
                     }
                     else if (e.Message.Audio != null)
                     {
-                        await _botClient.EditMessageMediaAsync(chatId, forwardedMessageId, new InputMediaAudio(e.Message.Audio.FileId));
+                        await _botClient.EditMessageMediaAsync(pair.chat, forwardedMessageId, new InputMediaAudio(e.Message.Audio.FileId));
                     }
                     else if (e.Message.Video != null)
                     {
-                        await _botClient.EditMessageMediaAsync(chatId, forwardedMessageId, new InputMediaVideo(e.Message.Video.FileId));
+                        await _botClient.EditMessageMediaAsync(pair.chat, forwardedMessageId, new InputMediaVideo(e.Message.Video.FileId));
                     }
                     else if (e.Message.Document != null)
                     {
-                        await _botClient.EditMessageMediaAsync(chatId, forwardedMessageId, new InputMediaDocument(e.Message.Document.FileId));
+                        await _botClient.EditMessageMediaAsync(pair.chat, forwardedMessageId, new InputMediaDocument(e.Message.Document.FileId));
                     }
                     if (e.Message.Location != null)
                     {
-                        await _botClient.EditMessageLiveLocationAsync(chatId, forwardedMessageId, e.Message.Location.Latitude, e.Message.Location.Longitude);
+                        await _botClient.EditMessageLiveLocationAsync(pair.chat, forwardedMessageId, e.Message.Location.Latitude, e.Message.Location.Longitude);
                     }
                 });
             }
@@ -143,13 +90,13 @@ namespace AnonymousFzBot
 
         private async void OnMessage(object sender, MessageEventArgs e)
         {
-            try
+            await SafeExecute(async () =>
             {
-                if (_state.BannedUsers.Contains(e.Message.From.Id))
+                if (_state.IsBanned(e.Message.From.Id))
                 {
                     await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "Сорян, вас забанили. До свидания.");
                 }
-                else if (!_state.EnabledUsers.ContainsKey(e.Message.From.Id))
+                else if (!_state.IsEnabled(e.Message.From.Id))
                 {
                     await HandleAuthenticate(e);
                 }
@@ -161,18 +108,14 @@ namespace AnonymousFzBot
                 {
                     await ForwardMessage(e);
                 }
-            }
-            catch (Exception ex)
-            {
-                await _botClient.SendTextMessageAsync(new ChatId("diverofdark"), "СоваБот: Случилась непоправимая ошибка, отправь это @diverofdark плиз, никто не видит это кроме тебя: \n" + ex);
-            }
+            });
         }
 
         private async Task HandleAuthenticate(MessageEventArgs e)
         {
             if (e.Message.ForwardFromChat != null && e.Message.ForwardFromChat.Id == -1001429386280)
             {
-                _state.EnabledUsers.Add(e.Message.From.Id, e.Message.Chat.Id);
+                _state.Enable(e.Message.From.Id, e.Message.Chat.Id);
                 await _botClient.SendTextMessageAsync(e.Message.Chat.Id,
                     "Чат прямо здесь, просто пиши! Важные нюансы: при создании опроса - видно кто его сделал, удалять сообщения нельзя, зато можно редактировать. В остальном вроде всё работает. Ну и истории нету.");
             }
@@ -190,26 +133,23 @@ namespace AnonymousFzBot
             }
             else
             {
-                var originalMessage = GetProxiedMessageOriginalId(e.Message.From.Id, e.Message.MessageId);
+                var originalMessage = _state.GetProxiedMessageOriginalId(e.Message.From.Id, e.Message.MessageId);
                 
                 if (originalMessage.originalMessageId != 0 && !originalMessage.sentByMe)
                 {
-                    var user = _state.UserMessages.FirstOrDefault(v => v.Value.Contains(originalMessage.originalMessageId)).Key;
+                    var user = _state.GetUserIdByMessageId(originalMessage.originalMessageId);
                     if (user != 0)
                     {
-                        _state.BannedUsers.Add(user);
-                        foreach (var pair in _state.EnabledUsers)
+                        _state.Ban(user);
+                        foreach (var pair in _state.GetUsers())
                         {
                             await SafeExecute(async () =>
                             {
-                                var userId = pair.Key;
-                                var chatId = pair.Value;
-
-                                var proxied = GetProxyOfMessageForUser(userId, originalMessage.originalMessageId);
+                                var proxied = _state.GetProxyOfMessageForUser(pair.user, originalMessage.originalMessageId);
 
                                 if (proxied.proxiedId != 0)
                                 {
-                                    await _botClient.SendTextMessageAsync(chatId, "СоваБот: Забанен автор сообщения", replyToMessageId: proxied.proxiedId);
+                                    await _botClient.SendTextMessageAsync(pair.chat, "СоваБот: Забанен автор сообщения", replyToMessageId: proxied.proxiedId);
                                 }
                             });
                         }
@@ -224,39 +164,24 @@ namespace AnonymousFzBot
 
         private async Task ForwardMessage(MessageEventArgs e)
         {
-            var otherUsers = _state.EnabledUsers.Where(v => v.Key != e.Message.From.Id).ToList();
+            var otherUsers = _state.GetUsers().Where(v => v.user != e.Message.From.Id).ToList();
 
-            if (!_state.UserMessages.TryGetValue(e.Message.From.Id, out var userMessages))
-            {
-                userMessages = new List<int>();
-                _state.UserMessages[e.Message.From.Id] = userMessages;
-            }
-
-            userMessages.Add(e.Message.MessageId);
+            _state.RecordUserSentMessage(e.Message.From.Id, e.Message.MessageId);
 
             foreach (var pair in otherUsers)
             {
                 await SafeExecute(async () =>
                 {
-                    var userId = pair.Key;
-                    var chatId = pair.Value;
-
                     int replyToMessageId = 0;
 
                     var disableNotification = true;
-
-                    if (!_state.ForwardedMessageIds.TryGetValue(userId, out var forwardeds))
-                    {
-                        forwardeds = new Dictionary<int, int>();
-                        _state.ForwardedMessageIds[userId] = forwardeds;
-                    }
 
                     if (e.Message.ReplyToMessage != null)
                     {
                         replyToMessageId = e.Message.ReplyToMessage.MessageId;
 
-                        var original = GetProxiedMessageOriginalId(e.Message.From.Id, replyToMessageId);
-                        var proxiedForCurrentUser = GetProxyOfMessageForUser(userId, original.originalMessageId);
+                        var original = _state.GetProxiedMessageOriginalId(e.Message.From.Id, replyToMessageId);
+                        var proxiedForCurrentUser = _state.GetProxyOfMessageForUser(pair.user, original.originalMessageId);
 
                         replyToMessageId = proxiedForCurrentUser.proxiedId;
                         if (original.sentByMe)
@@ -270,54 +195,55 @@ namespace AnonymousFzBot
                     switch (e.Message.Type)
                     {
                         case MessageType.Text:
-                            msg = await _botClient.SendTextMessageAsync(chatId, e.Message.Text, disableNotification: disableNotification, replyToMessageId: replyToMessageId);
+                            msg = await _botClient.SendTextMessageAsync(pair.chat, e.Message.Text, disableNotification: disableNotification, replyToMessageId: replyToMessageId);
                             break;
                         case MessageType.Photo:
-                            msg = await _botClient.SendPhotoAsync(chatId, new InputOnlineFile(e.Message.Photo.OrderByDescending(v => v.Height).First().FileId), e.Message.Caption,
+                            msg = await _botClient.SendPhotoAsync(pair.chat, new InputOnlineFile(e.Message.Photo.OrderByDescending(v => v.Height).First().FileId), e.Message.Caption,
                                 disableNotification: disableNotification,
                                 replyToMessageId: replyToMessageId);
                             break;
                         case MessageType.Audio:
-                            msg = await _botClient.SendAudioAsync(chatId, new InputOnlineFile(e.Message.Audio.FileId), e.Message.Caption, duration: e.Message.Audio.Duration,
+                            msg = await _botClient.SendAudioAsync(pair.chat, new InputOnlineFile(e.Message.Audio.FileId), e.Message.Caption, duration: e.Message.Audio.Duration,
                                 performer: e.Message.Audio.Performer,
                                 disableNotification: disableNotification, replyToMessageId: replyToMessageId);
                             break;
                         case MessageType.Video:
-                            msg = await _botClient.SendVideoAsync(chatId, new InputOnlineFile(e.Message.Video.FileId), e.Message.Video.Duration, e.Message.Video.Width,
+                            msg = await _botClient.SendVideoAsync(pair.chat, new InputOnlineFile(e.Message.Video.FileId), e.Message.Video.Duration, e.Message.Video.Width,
                                 e.Message.Video.Height,
                                 disableNotification: disableNotification, replyToMessageId: replyToMessageId);
                             break;
                         case MessageType.Voice:
-                            msg = await _botClient.SendVoiceAsync(chatId, new InputOnlineFile(e.Message.Voice.FileId), caption: e.Message.Caption, disableNotification: disableNotification,
+                            msg = await _botClient.SendVoiceAsync(pair.chat, new InputOnlineFile(e.Message.Voice.FileId), caption: e.Message.Caption, disableNotification: disableNotification,
                                 replyToMessageId: replyToMessageId);
                             break;
                         case MessageType.Document:
-                            msg = await _botClient.SendDocumentAsync(chatId, new InputOnlineFile(e.Message.Document.FileId), caption: e.Message.Caption,
+                            msg = await _botClient.SendDocumentAsync(pair.chat, new InputOnlineFile(e.Message.Document.FileId), caption: e.Message.Caption,
                                 disableNotification: disableNotification,
                                 replyToMessageId: replyToMessageId);
                             break;
                         case MessageType.Sticker:
-                            msg = await _botClient.SendStickerAsync(chatId, new InputOnlineFile(e.Message.Sticker.FileId), disableNotification: disableNotification,
+                            msg = await _botClient.SendStickerAsync(pair.chat, new InputOnlineFile(e.Message.Sticker.FileId), disableNotification: disableNotification,
                                 replyToMessageId: replyToMessageId);
                             break;
                         case MessageType.Location:
-                            msg = await _botClient.SendLocationAsync(chatId, e.Message.Location.Latitude, e.Message.Location.Longitude, disableNotification: disableNotification,
+                            msg = await _botClient.SendLocationAsync(pair.chat, e.Message.Location.Latitude, e.Message.Location.Longitude, disableNotification: disableNotification,
                                 replyToMessageId: replyToMessageId);
                             break;
                         case MessageType.Poll:
-                            msg = await _botClient.ForwardMessageAsync(chatId, e.Message.Chat.Id, e.Message.MessageId, true);
+                            msg = await _botClient.ForwardMessageAsync(pair.chat, e.Message.Chat.Id, e.Message.MessageId, true);
                             break;
                         case MessageType.Dice:
-                            msg = await _botClient.ForwardMessageAsync(chatId, e.Message.Chat.Id, e.Message.MessageId, true);
+                            msg = await _botClient.ForwardMessageAsync(pair.chat, e.Message.Chat.Id, e.Message.MessageId, true);
                             break;
                         case MessageType.MessagePinned:
-                            var originalMessage = e.Message.PinnedMessage.MessageId;
-                            if (forwardeds.ContainsKey(originalMessage))
+                            var sentMessage = e.Message.PinnedMessage.MessageId;
+                            var originalMessage = _state.GetProxiedMessageOriginalId(e.Message.From.Id, sentMessage);
+                            var proxiedMessage = _state.GetProxyOfMessageForUser(pair.user, originalMessage.originalMessageId);
+                            
+                            if (proxiedMessage.proxiedId != 0)
                             {
-                                originalMessage = forwardeds[originalMessage];
+                                await _botClient.PinChatMessageAsync(pair.chat, proxiedMessage.proxiedId);
                             }
-
-                            await _botClient.PinChatMessageAsync(chatId, originalMessage);
                             return;
                         case MessageType.Venue:
                         case MessageType.VideoNote:
@@ -338,11 +264,11 @@ namespace AnonymousFzBot
                         case MessageType.MigratedToSupergroup:
                         case MessageType.MigratedFromGroup:
                         default:
-                            await _botClient.SendTextMessageAsync(userId, "СоваБот: Извини, я пока не умею такие типы сообщений посылать. Напиши об этом в личку @diverofdark, он наверное починит", replyToMessageId: e.Message.MessageId);
+                            await _botClient.SendTextMessageAsync(pair.user, "СоваБот: Извини, я пока не умею такие типы сообщений посылать. Напиши об этом в личку @diverofdark, он наверное починит", replyToMessageId: e.Message.MessageId);
                             return;
                     }
 
-                    forwardeds[e.Message.MessageId] = msg.MessageId;
+                    _state.RecordMessageWasForwarded(pair.user, e.Message.MessageId, msg.MessageId);
                 });
             }
         }
