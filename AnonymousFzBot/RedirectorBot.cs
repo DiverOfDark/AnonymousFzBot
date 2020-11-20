@@ -23,6 +23,12 @@ namespace AnonymousFzBot
             _botClient.StartReceiving();
             _botClient.OnMessage += OnMessage;
             _botClient.OnMessageEdited += OnMessageEdited;
+            _botClient.OnCallbackQuery += OnCallbackQuery;
+        }
+
+        private async void OnCallbackQuery(object? sender, CallbackQueryEventArgs e)
+        {
+            await _botClient.AnswerCallbackQueryAsync(e.CallbackQuery.Id);
         }
 
         private static bool IsSentByAdmin(MessageEventArgs e) => e.Message.From.Username == "diverofdark" || e.Message.From.Username == "IgorMasko";
@@ -233,7 +239,8 @@ namespace AnonymousFzBot
                     {
                         ikb = new InlineKeyboardMarkup(new InlineKeyboardButton
                         {
-                            Text = e.Message.From.Username
+                            Text = e.Message.From.Username,
+                            CallbackData = "test"
                         });
                     }
                     
