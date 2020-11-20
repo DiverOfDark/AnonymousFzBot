@@ -246,7 +246,7 @@ namespace AnonymousFzBot
                     {
                         ikb = new InlineKeyboardMarkup(new InlineKeyboardButton
                         {
-                            Text = e.Message.From.Username,
+                            Text = $"{e.Message.From.Username}({e.Message.From.FirstName} {e.Message.From.LastName})",
                             CallbackData = "test"
                         });
                     }
