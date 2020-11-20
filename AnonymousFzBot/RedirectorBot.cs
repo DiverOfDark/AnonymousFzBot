@@ -132,7 +132,7 @@ namespace AnonymousFzBot
                         await _botClient.SendTextMessageAsync(e.Message.Chat.Id, $"Всего с ботом общалось {allKnownUsersCount}, из них последние активные:\n{inlineMsg}");
                     }
                 }
-                else if (e.Message.Text.StartsWith("/sign"))
+                else if (e.Message.Text != null && e.Message.Text.StartsWith("/sign"))
                 {
                     e.Message.Text = e.Message.Text.Substring("/sign".Length);
                     await ForwardMessage(e, true);
