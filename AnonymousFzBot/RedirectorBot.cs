@@ -121,7 +121,7 @@ namespace AnonymousFzBot
                     if (users.Count < 5)
                     {
                         await _botClient.SendTextMessageAsync(e.Message.Chat.Id,
-                            "Слишком мало пользователей отметилось с момента ввода этого функционала. Как только будет хотя бы 5 - начну выводить последних людей кто был онлайн (по алфавиту)");
+                            "СоваБот: Слишком мало пользователей отметилось с момента ввода этого функционала. Как только будет хотя бы 5 - начну выводить последних людей кто был онлайн (по алфавиту)");
                     }
                     else
                     {
@@ -129,21 +129,28 @@ namespace AnonymousFzBot
                         users.Sort(); // we don't want to lose anonymity because of ordering by last message
                         var inlineMsg = string.Join("\n", users.Select(v => "@" + v + "\n"));
 
-                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, $"Всего с ботом общалось {allKnownUsersCount}, из них последние активные:\n{inlineMsg}");
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, $"СоваБот: Всего с ботом общалось {allKnownUsersCount}, из них последние активные:\n{inlineMsg}");
                     }
                 }
                 else if (e.Message.Text != null && e.Message.Text.StartsWith("/sign"))
                 {
                     e.Message.Text = e.Message.Text.Substring("/sign".Length);
-                    await ForwardMessage(e, true);
+                    if (string.IsNullOrWhiteSpace(e.Message.Text))
+                    {
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Не тыкай по ссылке, напиши руками :)");
+                    }
+                    else
+                    {
+                        await ForwardMessage(e, true);
+                    }
                 }
                 else if (e.Message.Text == "/help")
                 {
-                    await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "Справка по боту:\n" +
+                    await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Справка по боту:\n" +
                                                                              "/help - выводит этот текст\n" +
                                                                              "/ban - позволяет забанить человека (админу)\n" +
                                                                              "/users - показывает список пользователей\n" +
-                                                                             "/sign <текст> - позволяет отправить текст с подписью");
+                                                                             "/sign <текст> - позволяет отправить текст с подписью.");
                 }
                 else
                 {
@@ -158,11 +165,11 @@ namespace AnonymousFzBot
             {
                 _state.Enable(e.Message.From.Id, e.Message.Chat.Id);
                 await _botClient.SendTextMessageAsync(e.Message.Chat.Id,
-                    "Чат прямо здесь, просто пиши! Важные нюансы: при создании опроса - видно кто его сделал, удалять сообщения нельзя, зато можно редактировать. В остальном вроде всё работает. Ну и истории нету.");
+                    "СоваБот: Чат прямо здесь, просто пиши! Важные нюансы: при создании опроса - видно кто его сделал, удалять сообщения нельзя, зато можно редактировать. В остальном вроде всё работает. Ну и истории нету.");
             }
             else
             {
-                await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "Перешли мне любое сообщение с текстом из секретных движухи чтобы вступить в ряды анонимусов FZ!");
+                await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "Перешли мне любое сообщение с текстом из Секретных Движух чтобы вступить в ряды анонимусов FZ! Это нужно, чтобы убедиться что ты из ФЗ, а не какой-то левый человек.");
             }
         }
 
