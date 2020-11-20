@@ -35,7 +35,6 @@ namespace AnonymousFzBot
             public Dictionary<int, long> EnabledUsers { get; set; } = new Dictionary<int, long>(); // User -> ChatId
             public List<int> BannedUsers { get; set; } = new List<int>();
 
-            [JsonIgnore]
             public Dictionary<string, DateTime> LastOnline { get; } = new Dictionary<string, DateTime>();
 
             public static SerializedState Load()
