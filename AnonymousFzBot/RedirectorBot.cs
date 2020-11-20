@@ -55,7 +55,7 @@ namespace AnonymousFzBot
             {
                 await SafeExecute(async () =>
                 {
-                    var originalMessage = _state.GetProxiedMessageOriginalId(pair.user, e.Message.MessageId);
+                    var originalMessage = _state.GetProxiedMessageOriginalId(e.Message.From.Id, e.Message.MessageId);
                     if (originalMessage.sentByMe)
                         return;
 
