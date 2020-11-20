@@ -129,7 +129,7 @@ namespace AnonymousFzBot
                         users.Sort(); // we don't want to lose anonymity because of ordering by last message
                         var inlineMsg = string.Join("\n", users.Select(v => "@" + v + "\n"));
 
-                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, $"СоваБот: Всего с ботом общалось {allKnownUsersCount}, из них последние активные:\n{inlineMsg}");
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, $"СоваБот: Всего с ботом общалось {allKnownUsersCount} человек, из них последние активные:\n{inlineMsg}");
                     }
                 }
                 else if (e.Message.Text != null && e.Message.Text.StartsWith("/sign"))
