@@ -232,7 +232,7 @@ namespace AnonymousFzBot
                         var proxiedForCurrentUser = _state.GetProxyOfMessageForUser(pair.user, original.originalMessageId);
 
                         replyToMessageId = proxiedForCurrentUser.proxiedId;
-                        if (original.sentByMe)
+                        if (_state.WasSentByUser(original.originalMessageId, pair.user))
                         {
                             disableNotification = false;
                         }

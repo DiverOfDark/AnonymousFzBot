@@ -134,7 +134,16 @@ namespace AnonymousFzBot
             }
 
             userMessages.Add(messageId);
+        }
+        
+        public bool WasSentByUser(int originalMessageId, int userId)
+        {
+            if (!_innerState.UserMessages.TryGetValue(userId, out var messages))
+            {
+                return false;
+            }
 
+            return messages.Contains(originalMessageId);
         }
 
         public int GetUserIdByMessageId(int originalMessageId) => _innerState.UserMessages.FirstOrDefault(v => v.Value.Contains(originalMessageId)).Key;
