@@ -169,7 +169,9 @@ namespace AnonymousFzBot
 
         public void StoreLastOnline(string fromUsername)
         {
-            _innerState.LastOnline[fromUsername] = DateTime.UtcNow;
+            var dateTime = DateTime.UtcNow;
+            var anonDateTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, 0, 0, dateTime.Kind);
+            _innerState.LastOnline[fromUsername] = anonDateTime;
         }
 
         public IEnumerable<string> GetLastOnline() => _innerState.LastOnline.OrderByDescending(v => v.Value).Select(v => v.Key);
