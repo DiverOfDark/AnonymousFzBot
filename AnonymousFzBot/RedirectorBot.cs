@@ -246,7 +246,7 @@ namespace AnonymousFzBot
                     {
                         ikb = new InlineKeyboardMarkup(new InlineKeyboardButton
                         {
-                            Text = $"{e.Message.From.Username}({e.Message.From.FirstName} {e.Message.From.LastName})",
+                            Text = $"{e.Message.From.Username} ({(e.Message.From.FirstName + " " + e.Message.From.LastName).Trim()})",
                             Url = "tg://user?id=" + e.Message.From.Id,
                         });
                     }
