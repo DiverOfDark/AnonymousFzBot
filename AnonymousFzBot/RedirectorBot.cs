@@ -114,6 +114,10 @@ namespace AnonymousFzBot
                 {
                     await HandleBanCommand(e);
                 }
+                else if (e.Message.Text == "/unban" && IsSentByAdmin(e))
+                {
+                    await HandleUnbanCommand(e);
+                }
                 else if (e.Message.Text == "/users")
                 {
                     var lastOnline = _state.GetLastOnline();
@@ -173,7 +177,9 @@ namespace AnonymousFzBot
             }
         }
 
-        private async Task HandleBanCommand(MessageEventArgs e)
+        private Task HandleUnbanCommand(MessageEventArgs e) => HandleBanCommand(e, true);
+
+        private async Task HandleBanCommand(MessageEventArgs e, bool unban = false)
         {
             if (e.Message.ReplyToMessage == null)
             {
@@ -181,25 +187,32 @@ namespace AnonymousFzBot
             }
             else
             {
-                var originalMessage = _state.GetProxiedMessageOriginalId(e.Message.From.Id, e.Message.MessageId);
+                var originalMessage = _state.GetProxiedMessageOriginalId(e.Message.ReplyToMessage.From.Id, e.Message.ReplyToMessage.MessageId);
                 
                 if (originalMessage.originalMessageId != 0 && !originalMessage.sentByMe)
                 {
                     var user = _state.GetUserIdByMessageId(originalMessage.originalMessageId);
                     if (user != 0)
                     {
-                        _state.Ban(user);
-                        foreach (var pair in _state.GetUsers())
+                        if (unban)
                         {
-                            await SafeExecute(async () =>
+                            _state.Unban(user);
+                        }
+                        else
+                        {
+                            _state.Ban(user);
+                            foreach (var pair in _state.GetUsers())
                             {
-                                var proxied = _state.GetProxyOfMessageForUser(pair.user, originalMessage.originalMessageId);
-
-                                if (proxied.proxiedId != 0)
+                                await SafeExecute(async () =>
                                 {
-                                    await _botClient.SendTextMessageAsync(pair.chat, "СоваБот: Забанен автор сообщения", replyToMessageId: proxied.proxiedId);
-                                }
-                            });
+                                    var proxied = _state.GetProxyOfMessageForUser(pair.user, originalMessage.originalMessageId);
+
+                                    if (proxied.proxiedId != 0)
+                                    {
+                                        await _botClient.SendTextMessageAsync(pair.chat, "СоваБот: Забанен автор сообщения", replyToMessageId: proxied.proxiedId);
+                                    }
+                                });
+                            }
                         }
 
                         return;

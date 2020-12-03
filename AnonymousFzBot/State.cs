@@ -123,6 +123,8 @@ namespace AnonymousFzBot
 
         public void Enable(in int fromId, in long chatId) => _innerState.EnabledUsers.Add(fromId, chatId);
 
+        public void Unban(in int user) => _innerState.BannedUsers.Remove(user);
+
         public void Ban(in int user) => _innerState.BannedUsers.Add(user);
 
         public void RecordUserSentMessage(in int fromId, in int messageId)
