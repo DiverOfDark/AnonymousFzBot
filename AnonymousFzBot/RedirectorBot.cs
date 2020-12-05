@@ -187,7 +187,7 @@ namespace AnonymousFzBot
             }
             else
             {
-                var originalMessage = _state.GetProxiedMessageOriginalId(e.Message.ReplyToMessage.From.Id, e.Message.ReplyToMessage.MessageId);
+                var originalMessage = _state.GetProxiedMessageOriginalId(e.Message.From.Id, e.Message.ReplyToMessage.MessageId);
                 
                 if (originalMessage.originalMessageId != 0 && !originalMessage.sentByMe)
                 {
