@@ -105,7 +105,7 @@ namespace AnonymousFzBot
             {
                 if (_state.IsBanned(e.Message.From.Id))
                 {
-                    await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "Сорян, вас забанили. До свидания.");
+                    await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Сорян, вас забанили. До свидания.", replyToMessageId:e.Message.MessageId);
                 }
                 else if (!_state.IsEnabled(e.Message.From.Id))
                 {
