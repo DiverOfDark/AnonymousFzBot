@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
@@ -184,42 +185,49 @@ namespace AnonymousFzBot
             if (e.Message.ReplyToMessage == null)
             {
                 await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Реплайни на сообщение юзера, которого хочешь забанить");
+                return;
             }
-            else
+
+            var originalMessage = _state.GetProxiedMessageOriginalId(e.Message.From.Id, e.Message.ReplyToMessage.MessageId);
+
+            if (originalMessage.originalMessageId == 0 || originalMessage.sentByMe)
             {
-                var originalMessage = _state.GetProxiedMessageOriginalId(e.Message.From.Id, e.Message.ReplyToMessage.MessageId);
-                
-                if (originalMessage.originalMessageId != 0 && !originalMessage.sentByMe)
+                Console.WriteLine(JsonConvert.SerializeObject(originalMessage));
+                await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Не могу найти автора сообщения");
+                return;
+            }
+
+            var user = _state.GetUserIdByMessageId(originalMessage.originalMessageId);
+            if (user != 0)
+            {
+                if (unban)
                 {
-                    var user = _state.GetUserIdByMessageId(originalMessage.originalMessageId);
-                    if (user != 0)
+                    _state.Unban(user);
+                }
+                else
+                {
+                    if (user == 912327) // @diverofdark TBD: add Masko Id
                     {
-                        if (unban)
-                        {
-                            _state.Unban(user);
-                        }
-                        else
-                        {
-                            _state.Ban(user);
-                            foreach (var pair in _state.GetUsers())
-                            {
-                                await SafeExecute(async () =>
-                                {
-                                    var proxied = _state.GetProxyOfMessageForUser(pair.user, originalMessage.originalMessageId);
-
-                                    if (proxied.proxiedId != 0)
-                                    {
-                                        await _botClient.SendTextMessageAsync(pair.chat, "СоваБот: Забанен автор сообщения", replyToMessageId: proxied.proxiedId);
-                                    }
-                                });
-                            }
-                        }
-
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Админа нельзя забанить");
                         return;
                     }
+
+                    _state.Ban(user);
                 }
 
-                await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Не могу найти автора сообщения");
+                foreach (var pair in _state.GetUsers())
+                {
+                    await SafeExecute(async () =>
+                    {
+                        var proxied = _state.GetProxyOfMessageForUser(pair.user, originalMessage.originalMessageId);
+
+                        if (proxied.proxiedId != 0)
+                        {
+                            await _botClient.SendTextMessageAsync(pair.chat, unban ? "СоваБот: Разбанен автор сообщения" : "СоваБот: Забанен автор сообщения",
+                                replyToMessageId: proxied.proxiedId);
+                        }
+                    });
+                }
             }
         }
 
