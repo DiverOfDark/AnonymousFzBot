@@ -41,9 +41,30 @@ namespace AnonymousFzBot
             {
                 if (File.Exists(StateFile))
                 {
-                    return JsonSerializer.Deserialize<SerializedState>(File.ReadAllText(StateFile));
+                    var serializedState = JsonSerializer.Deserialize<SerializedState>(File.ReadAllText(StateFile)); 
+                    // serializedState.Optimize();
+                    return serializedState;
                 }
                 return new SerializedState();
+            }
+
+            private void Optimize()
+            {
+                foreach (var v in ForwardedMessageIds.Values)
+                {
+                    while (v.Keys.Count > 1000)
+                    {
+                        v.Remove(v.Keys.Min());
+                    }
+                }
+
+                foreach (var v in UserMessages.Values)
+                {
+                    while (v.Count > 1000)
+                    {
+                        v.Remove(v.Min());
+                    }
+                }
             }
 
             public void Save()

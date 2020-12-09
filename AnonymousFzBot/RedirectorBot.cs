@@ -34,7 +34,7 @@ namespace AnonymousFzBot
 
         private static bool IsSentByAdmin(MessageEventArgs e) => e.Message.From.Username == "diverofdark" || e.Message.From.Username == "IgorMasko";
 
-        private async Task SafeExecute(Func<Task> action, Action<Exception> onError = null)
+        private async Task SafeExecute(Func<Task> action, Func<Exception, Task<bool>> onError = null)
         {
             try
             {
@@ -42,9 +42,17 @@ namespace AnonymousFzBot
             }
             catch (Exception ex)
             {
-                onError?.Invoke(ex);
-                Console.Error.WriteLine(ex);
-                await _botClient.SendTextMessageAsync(912327, "Exception: " + ex);
+                bool ignore = false;
+                if (onError != null)
+                {
+                    ignore = await onError(ex);
+                }
+                
+                if (!ignore)
+                {
+                    Console.Error.WriteLine(ex);
+                    await _botClient.SendTextMessageAsync(912327, "Exception: " + ex);
+                }
             }
         }
 
@@ -105,7 +113,7 @@ namespace AnonymousFzBot
             {
                 if (_state.IsBanned(e.Message.From.Id))
                 {
-                    await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Сорян, вас забанили. До свидания.", replyToMessageId:e.Message.MessageId);
+                    await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Сорян, вас забанили. До свидания.", replyToMessageId:e.Message.MessageId, replyMarkup: SelfSign());
                 }
                 else if (!_state.IsEnabled(e.Message.From.Id))
                 {
@@ -126,15 +134,15 @@ namespace AnonymousFzBot
                     if (users.Count < 5)
                     {
                         await _botClient.SendTextMessageAsync(e.Message.Chat.Id,
-                            "СоваБот: Слишком мало пользователей отметилось с момента ввода этого функционала. Как только будет хотя бы 5 - начну выводить последних людей кто был онлайн (по алфавиту)");
+                            "СоваБот: Слишком мало пользователей отметилось с момента ввода этого функционала. Как только будет хотя бы 5 - начну выводить последних людей кто был онлайн (по алфавиту)",replyMarkup: SelfSign());
                     }
                     else
                     {
                         var allKnownUsersCount = _state.GetUsers().Count;
                         users.Sort(); // we don't want to lose anonymity because of ordering by last message
-                        var inlineMsg = string.Join("\n", users.Select(v => "@" + v + "\n"));
+                        var inlineMsg = string.Join("\n", users.Select(v => "@" + v));
 
-                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, $"СоваБот: Всего с ботом общалось {allKnownUsersCount} человек, из них последние активные:\n{inlineMsg}");
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, $"СоваБот: Всего с ботом общалось {allKnownUsersCount} человек, из них последние активные:\n{inlineMsg}",replyMarkup: SelfSign());
                     }
                 }
                 else if (e.Message.Text != null && e.Message.Text.StartsWith("/sign"))
@@ -142,7 +150,7 @@ namespace AnonymousFzBot
                     e.Message.Text = e.Message.Text.Substring("/sign".Length);
                     if (string.IsNullOrWhiteSpace(e.Message.Text))
                     {
-                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Не тыкай по ссылке, напиши руками :)");
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Не тыкай по ссылке, напиши руками :)",replyMarkup: SelfSign());
                     }
                     else
                     {
@@ -155,7 +163,7 @@ namespace AnonymousFzBot
                                                                              "/help - выводит этот текст\n" +
                                                                              "/ban и /unban - позволяет забанить человека (админу)\n" +
                                                                              "/users - показывает список пользователей\n" +
-                                                                             "/sign <текст> - позволяет отправить текст с подписью.");
+                                                                             "/sign <текст> - позволяет отправить текст с подписью.",replyMarkup: SelfSign());
                 }
                 else
                 {
@@ -170,7 +178,15 @@ namespace AnonymousFzBot
             {
                 _state.Enable(e.Message.From.Id, e.Message.Chat.Id);
                 await _botClient.SendTextMessageAsync(e.Message.Chat.Id,
-                    "СоваБот: Чат прямо здесь, просто пиши! Важные нюансы: при создании опроса - видно кто его сделал, удалять сообщения нельзя, зато можно редактировать. В остальном вроде всё работает. Ну и истории нету.");
+                    "СоваБот: Чат прямо здесь, просто пиши! Важные нюансы: при создании опроса - видно кто его сделал, удалять сообщения нельзя, зато можно редактировать. В остальном вроде всё работает. Ну и истории нету.",replyMarkup: SelfSign());
+                
+                foreach (var subpair in _state.GetUsers())
+                {
+                    if (subpair.chat != e.Message.Chat.Id)
+                    {
+                        await SafeExecute(async () => { await _botClient.SendTextMessageAsync(subpair.chat, "СоваБот: Кто-то пришёл в чат",replyMarkup: SelfSign(), disableNotification: true); });
+                    }
+                }
             }
             else
             {
@@ -184,7 +200,7 @@ namespace AnonymousFzBot
         {
             if (e.Message.ReplyToMessage == null)
             {
-                await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Реплайни на сообщение юзера, которого хочешь забанить");
+                await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Реплайни на сообщение юзера, которого хочешь забанить",replyMarkup: SelfSign());
                 return;
             }
 
@@ -193,7 +209,7 @@ namespace AnonymousFzBot
             if (originalMessage.originalMessageId == 0 || originalMessage.sentByMe)
             {
                 Console.WriteLine(JsonConvert.SerializeObject(originalMessage));
-                await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Не могу найти автора сообщения");
+                await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Не могу найти автора сообщения",replyMarkup: SelfSign());
                 return;
             }
 
@@ -208,7 +224,7 @@ namespace AnonymousFzBot
                 {
                     if (user == 912327) // @diverofdark TBD: add Masko Id
                     {
-                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Админа нельзя забанить");
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, "СоваБот: Админа нельзя забанить",replyMarkup: SelfSign());
                         return;
                     }
 
@@ -224,7 +240,8 @@ namespace AnonymousFzBot
                         if (proxied.proxiedId != 0)
                         {
                             await _botClient.SendTextMessageAsync(pair.chat, unban ? "СоваБот: Разбанен автор сообщения" : "СоваБот: Забанен автор сообщения",
-                                replyToMessageId: proxied.proxiedId);
+                                replyToMessageId: proxied.proxiedId,
+                                replyMarkup: SelfSign());
                         }
                     });
                 }
@@ -247,16 +264,17 @@ namespace AnonymousFzBot
 
                     if (e.Message.ReplyToMessage != null)
                     {
-                        replyToMessageId = e.Message.ReplyToMessage.MessageId;
+                        var original = _state.GetProxiedMessageOriginalId(e.Message.From.Id, e.Message.ReplyToMessage.MessageId);
 
-                        var original = _state.GetProxiedMessageOriginalId(e.Message.From.Id, replyToMessageId);
                         var proxiedForCurrentUser = _state.GetProxyOfMessageForUser(pair.user, original.originalMessageId);
 
+                        // User A send 2 to bot, which was a reply to 1
+                        // original message id was O(1)
+                        // message to send reply to R(O(1))
+                        // disable notification should be if R(O(1)) == O(1)
+                        
+                        disableNotification = !proxiedForCurrentUser.sendToMe;
                         replyToMessageId = proxiedForCurrentUser.proxiedId;
-                        if (_state.WasSentByUser(original.originalMessageId, pair.user))
-                        {
-                            disableNotification = false;
-                        }
                     }
 
                     Message msg;
@@ -271,7 +289,7 @@ namespace AnonymousFzBot
                             Url = "tg://user?id=" + e.Message.From.Id,
                         });
                     }
-                    
+
                     switch (e.Message.Type)
                     {
                         case MessageType.Text:
@@ -310,20 +328,21 @@ namespace AnonymousFzBot
                                 replyToMessageId: replyToMessageId);
                             break;
                         case MessageType.Poll:
-                            msg = await _botClient.ForwardMessageAsync(pair.chat, e.Message.Chat.Id, e.Message.MessageId, true);
+                            msg = await _botClient.ForwardMessageAsync(pair.chat, e.Message.Chat.Id, e.Message.MessageId, disableNotification);
                             break;
                         case MessageType.Dice:
-                            msg = await _botClient.ForwardMessageAsync(pair.chat, e.Message.Chat.Id, e.Message.MessageId, true);
+                            msg = await _botClient.ForwardMessageAsync(pair.chat, e.Message.Chat.Id, e.Message.MessageId, disableNotification);
                             break;
                         case MessageType.MessagePinned:
                             var sentMessage = e.Message.PinnedMessage.MessageId;
                             var originalMessage = _state.GetProxiedMessageOriginalId(e.Message.From.Id, sentMessage);
                             var proxiedMessage = _state.GetProxyOfMessageForUser(pair.user, originalMessage.originalMessageId);
-                            
+
                             if (proxiedMessage.proxiedId != 0)
                             {
-                                await _botClient.PinChatMessageAsync(pair.chat, proxiedMessage.proxiedId);
+                                await _botClient.PinChatMessageAsync(pair.chat, proxiedMessage.proxiedId, disableNotification);
                             }
+
                             return;
                         case MessageType.Venue:
                         case MessageType.VideoNote:
@@ -344,20 +363,37 @@ namespace AnonymousFzBot
                         case MessageType.MigratedToSupergroup:
                         case MessageType.MigratedFromGroup:
                         default:
-                            await _botClient.SendTextMessageAsync(pair.user, "СоваБот: Извини, я пока не умею такие типы сообщений посылать. Напиши об этом в личку @diverofdark, он наверное починит", replyToMessageId: e.Message.MessageId);
+                            await _botClient.SendTextMessageAsync(pair.user, "СоваБот: Извини, я пока не умею такие типы сообщений посылать. Напиши об этом в личку @diverofdark, он наверное починит",
+                                replyToMessageId: e.Message.MessageId,
+                                replyMarkup: SelfSign());
                             return;
                     }
 
                     _state.RecordMessageWasForwarded(pair.user, e.Message.MessageId, msg.MessageId);
-                }, ex =>
+                }, async ex =>
                 {
                     if (ex.Message.Contains("Forbidden: bot was blocked by the user"))
                     {
                         _state.Disable(pair.user);
+
+                        foreach (var subpair in _state.GetUsers())
+                        {
+                            await SafeExecute(async () => { await _botClient.SendTextMessageAsync(subpair.chat, "СоваБот: Кто-то покинул чат", replyMarkup: SelfSign()); });
+                        }
+
+                        return true;
                     }
+
+                    return false;
                 });
             }
         }
+
+        private InlineKeyboardMarkup SelfSign() => new InlineKeyboardMarkup(new InlineKeyboardButton
+        {
+            Text = $"СоваБот",
+            Url = "tg://user?id=0"
+        });
 
         public void Dispose()
         {
