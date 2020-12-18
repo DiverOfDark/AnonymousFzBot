@@ -16,11 +16,13 @@ namespace AnonymousFzBot
     {
         private readonly TelegramBotClient _botClient;
         private readonly State _state;
+        private static List<string> _adminList;
 
-        public RedirectorBot(TelegramBotClient botClient, State state)
+        public RedirectorBot(TelegramBotClient botClient, State state, List<string> admins)
         {
             _botClient = botClient;
             _state = state;
+            _adminList = admins;
             _botClient.StartReceiving();
             _botClient.OnMessage += OnMessage;
             _botClient.OnMessageEdited += OnMessageEdited;
@@ -32,7 +34,7 @@ namespace AnonymousFzBot
             await _botClient.AnswerCallbackQueryAsync(e.CallbackQuery.Id);
         }
 
-        private static bool IsSentByAdmin(MessageEventArgs e) => e.Message.From.Username == "diverofdark" || e.Message.From.Username == "IgorMasko";
+        private static bool IsSentByAdmin(MessageEventArgs e) => _adminList.Contains(e.Message.From.Username);
 
         private async Task SafeExecute(Func<Task> action, Func<Exception, Task<bool>> onError = null)
         {
