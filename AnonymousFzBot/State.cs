@@ -35,7 +35,7 @@ namespace AnonymousFzBot
             public Dictionary<int, long> EnabledUsers { get; set; } = new Dictionary<int, long>(); // User -> ChatId
             public List<int> BannedUsers { get; set; } = new List<int>();
 
-            public Dictionary<string, DateTime> LastOnline { get; } = new Dictionary<string, DateTime>();
+            public Dictionary<int, string> UserNames { get; } = new Dictionary<int, string>();
 
             public static SerializedState Load()
             {
@@ -190,13 +190,14 @@ namespace AnonymousFzBot
             _innerState.UserMessages.Remove(userToRemove);
         }
 
-        public void StoreLastOnline(string fromUsername)
+        public void StoreUserName(int id, string fromUsername)
         {
-            var dateTime = DateTime.UtcNow;
-            var anonDateTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, 0, 0, dateTime.Kind);
-            _innerState.LastOnline[fromUsername] = anonDateTime;
+            _innerState.UserNames[id] = fromUsername;
         }
 
-        public IEnumerable<string> GetLastOnline() => _innerState.LastOnline.OrderByDescending(v => v.Value).Select(v => v.Key);
+        public IEnumerable<string> GetUserNames()
+        {
+            return _innerState.EnabledUsers.Keys.Select(v=>_innerState.UserNames.GetValueOrDefault(v)).Where(v=>v!=null).ToList();
+        }
     }
 }

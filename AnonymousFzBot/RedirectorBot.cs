@@ -110,7 +110,8 @@ namespace AnonymousFzBot
 
         private async void OnMessage(object sender, MessageEventArgs e)
         {
-            _state.StoreLastOnline(e.Message.From.Username);
+            _state.StoreUserName(e.Message.From.Id, e.Message.From.Username);
+            
             await SafeExecute(async () =>
             {
                 if (_state.IsBanned(e.Message.From.Id))
@@ -131,7 +132,7 @@ namespace AnonymousFzBot
                 }
                 else if (e.Message.Text == "/users")
                 {
-                    var lastOnline = _state.GetLastOnline();
+                    var lastOnline = _state.GetUserNames();
                     var users = lastOnline.Take(10).ToList();
                     if (users.Count < 5)
                     {
@@ -140,11 +141,10 @@ namespace AnonymousFzBot
                     }
                     else
                     {
-                        var allKnownUsersCount = _state.GetUsers().Count;
                         users.Sort(); // we don't want to lose anonymity because of ordering by last message
                         var inlineMsg = string.Join("\n", users.Select(v => "@" + v));
 
-                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, $"СоваБот: Всего с ботом общалось {allKnownUsersCount} человек, из них последние активные:\n{inlineMsg}",replyMarkup: SelfSign());
+                        await _botClient.SendTextMessageAsync(e.Message.Chat.Id, $"СоваБот: Всего с ботом общалось {users.Count} человек:\n{inlineMsg}",replyMarkup: SelfSign());
                     }
                 }
                 else if (e.Message.Text != null && e.Message.Text.StartsWith("/sign"))
