@@ -133,7 +133,7 @@ namespace AnonymousFzBot
                 else if (e.Message.Text == "/users")
                 {
                     var lastOnline = _state.GetUserNames();
-                    var users = lastOnline.Take(10).ToList();
+                    var users = lastOnline.ToList();
                     if (users.Count < 5)
                     {
                         await _botClient.SendTextMessageAsync(e.Message.Chat.Id,
