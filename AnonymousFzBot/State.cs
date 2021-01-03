@@ -35,7 +35,7 @@ namespace AnonymousFzBot
             public Dictionary<int, long> EnabledUsers { get; set; } = new Dictionary<int, long>(); // User -> ChatId
             public List<int> BannedUsers { get; set; } = new List<int>();
 
-            public Dictionary<int, string> UserNames { get; } = new Dictionary<int, string>();
+            public Dictionary<int, string> UserNames { get; set; } = new Dictionary<int, string>();
 
             public static SerializedState Load()
             {
