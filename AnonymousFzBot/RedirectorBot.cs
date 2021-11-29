@@ -374,7 +374,7 @@ namespace AnonymousFzBot
                     _state.RecordMessageWasForwarded(pair.user, e.Message.MessageId, msg.MessageId);
                 }, async ex =>
                 {
-                    if (ex.Message.Contains("Forbidden: bot was blocked by the user"))
+                    if (ex.Message.Contains("Forbidden: bot was blocked by the user") || ex.Message.Contains("Forbidden: user is deactivated"))
                     {
                         _state.Disable(pair.user);
 
